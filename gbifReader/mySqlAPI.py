@@ -1,4 +1,6 @@
 import mysql.connector
+from sqlalchemy import types, create_engine
+import pandas as pd
 
 
 class MySQLAPI:
@@ -12,6 +14,14 @@ class MySQLAPI:
             password=password,
             database=database
         )
+        self.host = host
+        self.user = user
+        self.password = password
+        self.schema = database
+        self.port = 3306
+
+        self.engine = create_engine(f'mysql+mysqldb://{self.user}:{self.password}@{self.host}:{self.port}/{self.schema}',
+                               echo=False)
 
         self.cursor = self.db.cursor()
 
@@ -24,8 +34,11 @@ class MySQLAPI:
 
         print(f" / {table} has been cleared.")
 
-    def rowcount(self, table):
+    def rowcount(self):
         return self.cursor.rowcount
+
+    def df_to_db(self, table, data_df):
+        data_df.to_sql(table, self.engine, if_exists='replace', chunksize=10000, index=False, dtype={"occurenceID": types.VARCHAR(length=255)})
 
     def list_to_db(self, table, val):
         print(f"\nInserting list into {table}...")
