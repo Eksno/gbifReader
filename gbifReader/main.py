@@ -36,7 +36,7 @@ def main():
         excluded_columns = ["mediaType", "issue"]
 
         # Sender dict til apiet som konverterer den til en csv fil
-        csvAPI.list_to_csv('data.csv', data_list[:1001], excluded_columns)
+        csvAPI.list_to_csv('data.csv', data_list[:1002], excluded_columns)
 
     if 'y' == input("\nDo you want to update the database? (y, n)\n"):
         host, user, password, database, table = get_login_details()
