@@ -20,7 +20,7 @@ class MySQLAPI:
         self.schema = database
         self.port = 3306
 
-        self.engine = create_engine(f'mysql+mysqldb://{self.user}:{self.password}@{self.host}:{self.port}/{self.schema}',
+        self.engine = create_engine(f'mysql+mysqlconnector://{self.user}:{self.password}@{self.host}:{self.port}/{self.schema}',
                                echo=False)
 
         self.cursor = self.db.cursor()
@@ -64,12 +64,14 @@ class MySQLAPI:
         self.cursor.execute(f"SELECT COUNT(*) FROM {table}")
         return len(self.cursor.fetchall())
 
+    def db_to_df(self, table):
+        print(f"\nInserting {table} into dataframe...")
+
+        return pd.read_sql(f'SELECT * FROM {table}', con=self.engine)
+
     def db_to_list(self, table):
-        print(f"\nInserting {table} into list...")
+        # Getting table as pandas dataframe
+        df = self.db_to_df(table)
 
-        self.cursor.execute(f"SELECT * FROM {table}")
-
-        rows = [row for row in self.cursor.fetchall()]
-
-        print(f" / {len(rows)} records collected.")
-        return rows
+        # Converting dataframe to python list.
+        return df.to_list()
