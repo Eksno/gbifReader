@@ -1,9 +1,13 @@
 import requests
+from datetime import datetime
+import dateutil.relativedelta
 from requests.auth import HTTPBasicAuth
 
 
 def send_request():
     url = "https://api.gbif.org/v1/occurrence/download/request"
+
+    d = datetime.now() - dateutil.relativedelta.relativedelta(months=1)
 
     query_dict = {
       "format": "SIMPLE_CSV",
@@ -15,12 +19,12 @@ def send_request():
           {
             "type": "equals",
             "key": "YEAR",
-            "value": "2020"
+            "value": d.year
           },
           {
             "type": "equals",
             "key": "MONTH",
-            "value": "11"
+            "value": d.month
           }
         ]
       }
@@ -31,4 +35,4 @@ def send_request():
     user, passwd = input("username: "), input("password: ")
     r = requests.post(url, headers=headers, json=query_dict, auth=HTTPBasicAuth(user, passwd))
 
-    return ''.join(list(str(r.content))[2:-2])
+    return ''.join(list(str(r.content))[2:-1])

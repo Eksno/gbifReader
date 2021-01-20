@@ -13,33 +13,36 @@ from zipfile import BadZipFile
 
 def main():
     if 'y' == input("Do you want to update the csv? (y, N)\n"):
-        #DOWNLOAD_ID = request_download.send_request()
+        DOWNLOAD_ID = request_download.send_request()
 
-        #print(DOWNLOAD_ID)
+        print(DOWNLOAD_ID)
 
-        #bad_zip_file = True
+        bad_zip_file = True
 
-        #progress = 0
-        #while bad_zip_file:
-            #try:
+        progress = 0
+        while bad_zip_file:
+            try:
+                r = requests.get(f"https://api.gbif.org/v1/occurrence/download/request/{DOWNLOAD_ID}.zip")
 
-        DOWNLOAD_ID = '0127923-200613084148143'
+                zipfile = ZipFile(BytesIO(r.content))
 
-        r = requests.get(f"https://api.gbif.org/v1/occurrence/download/request/{DOWNLOAD_ID}.zip")
+                filenames = zipfile.namelist()
 
-        zipfile = ZipFile(BytesIO(r.content))
+                val = zipfile.open(filenames[0]).read()
 
-        filenames = zipfile.namelist()
+                # Splitter opp tabs og linjeskift
+                data_list = [x.split('\\t') for x in str(val).split('\\n')]
 
-        val = zipfile.open(filenames[0]).read()
+                excluded_columns = ["mediaType", "issue"]
 
-        # Splitter opp tabs og linjeskift
-        data_list = [x.split('\\t') for x in str(val).split('\\n')]
-
-        excluded_columns = ["mediaType", "issue"]
-
-        # Sender dict til apiet som konverterer den til en csv fil
-        csvAPI.list_to_csv('csv/data.csv', data_list[:1002], excluded_columns)
+                # Sender dict til apiet som konverterer den til en csv fil
+                csvAPI.list_to_csv('csv/data.csv', data_list[:1002], excluded_columns)
+                bad_zip_file = False
+                print('yay')
+            except BadZipFile:
+                print(progress)
+                progress += 1
+                time.sleep(30)
 
     if 'y' == input("\nDo you want to update the table 'gbif_occurences'? (y, N)\n"):
         host, user, password, database, table = get_login_details()
@@ -49,7 +52,7 @@ def main():
         # Upload csv to database table 'gbif_occurrences'
         data_df = csvAPI.csv_to_df('csv/data.csv', index_col='occurrenceID')
 
-        data_df["lastInterpreted"] = pd.to_datetime(datetime.now())
+        data_df["updated"] = pd.to_datetime(datetime.now())
 
         my_sql_api.df_to_db('gbif_occurrences', data_df)
 
