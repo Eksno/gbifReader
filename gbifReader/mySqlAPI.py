@@ -38,7 +38,7 @@ class MySQLAPI:
         return self.cursor.rowcount
 
     def df_to_db(self, table, data_df):
-        data_df.to_sql(table, self.engine, if_exists='replace', chunksize=10000, index=False, dtype={"occurenceID": types.VARCHAR(length=255)})
+        data_df.to_sql(table, self.engine, if_exists='replace', chunksize=10000, dtype={"occurrenceID": types.VARCHAR(length=255)})
 
     def list_to_db(self, table, val):
         print(f"\nInserting list into {table}...")
@@ -64,10 +64,12 @@ class MySQLAPI:
         self.cursor.execute(f"SELECT COUNT(*) FROM {table}")
         return len(self.cursor.fetchall())
 
-    def db_to_df(self, table):
+    def db_to_df(self, table, index_col=None):
         print(f"\nInserting {table} into dataframe...")
-
-        return pd.read_sql(f'SELECT * FROM {table}', con=self.engine)
+        result = pd.read_sql(f'SELECT * FROM {table}', con=self.engine, index_col=index_col)
+        print(result)
+        print(f" / Dataframe created.")
+        return result
 
     def db_to_list(self, table):
         # Getting table as pandas dataframe

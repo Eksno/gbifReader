@@ -20,16 +20,20 @@ def csv_to_df(csv_file, index_col=None):
 def dict_to_csv(csv_file, data_dict, sep=','):
     df = pd.DataFrame(data=data_dict)
 
-    df.to_csv(csv_file, sep=sep, index=False)
+    df_to_csv(csv_file, df, sep, index=False)
 
 
-def list_to_csv(csv_file, data_list, excluded_columns=[]):
+def df_to_csv(csv_file, df, sep=',', index=True):
+    df.to_csv(csv_file, sep=sep, index=index)
+
+
+def list_to_csv(csv_file, data_list, sep=',', excluded_columns=[]):
     data_dict = {}
 
     for col in range(len(data_list[0])):
         if data_list[0][col] not in excluded_columns:
             data_dict[data_list[0][col]] = []
             for row in range(len(data_list) - 2):
-                    data_dict[data_list[0][col]].append(data_list[row + 1][col])
+                data_dict[data_list[0][col]].append(data_list[row + 1][col])
 
-    dict_to_csv(csv_file, data_dict)
+    dict_to_csv(csv_file, data_dict, sep)

@@ -1,3 +1,4 @@
+import sys
 import time
 import csvAPI
 import requests
@@ -12,13 +13,35 @@ from zipfile import BadZipFile
 
 
 def main():
-    if 'y' == input("Do you want to update the csv? (y, N)\n"):
-        DOWNLOAD_ID = request_download.send_request()
+    host, user, password, database, table = get_login_details()
 
-        print(DOWNLOAD_ID)
+    my_sql_api = MySQLAPI(host, user, password, database)
 
+    occurrences = my_sql_api.db_to_df('gbif_occurrences', index_col='occurrenceID')
+
+    csvAPI.df_to_csv('csv/fake_database.csv', occurrences)
+
+    if 'y' == input("\nDo you want to clear the table `gbif_occurrences`? (y, N)\n"):
+        my_sql_api.clear('gbif_occurrences')
+
+    if 'y' == input("\nDo you want to update the csv? (y, N)\n"):
+        try:
+            occurrences = my_sql_api.db_to_df('gbif_occurrences', index_col='occurrenceID')
+
+            # Get the first date and month along with the newest date from `updated` in the format `yyyy-mm-dd`.
+            first_year = str(min(occurrences["year"]))
+            first_month = str(min(occurrences["month"]))
+            last_update = str(max(pd.to_datetime(occurrences['updated'], format="%Y-%m-%d").dt.date))
+
+            DOWNLOAD_ID = request_download.send_request(first_year, first_month, last_update)
+
+        except:
+            print("Failed to get reference data, ignoring previous data...")
+            #DOWNLOAD_ID = request_download.send_request()
+            #DOWNLOAD_ID = '0181694-200613084148143'
+
+        print("\nDowloading data...")
         bad_zip_file = True
-
         progress = 0
         while bad_zip_file:
             try:
@@ -36,34 +59,30 @@ def main():
                 excluded_columns = ["mediaType", "issue"]
 
                 # Sender dict til apiet som konverterer den til en csv fil
-                csvAPI.list_to_csv('csv/data.csv', data_list[:1002], excluded_columns)
+                csvAPI.list_to_csv('csv/data.csv', data_list, excluded_columns)
                 bad_zip_file = False
-                print('yay')
+                print(" / Finished.")
             except BadZipFile:
-                print(progress)
+                sys.stdout.write(f'\r - Elapsed time: {progress} seconds.')
+                time.sleep(0.1)
                 progress += 1
-                time.sleep(30)
+                time.sleep(0.9)
 
     if 'y' == input("\nDo you want to update the table 'gbif_occurences'? (y, N)\n"):
-        host, user, password, database, table = get_login_details()
-
-        my_sql_api = MySQLAPI(host, user, password, database)
-
         # Upload csv to database table 'gbif_occurrences'
         data_df = csvAPI.csv_to_df('csv/data.csv', index_col='occurrenceID')
 
         data_df["updated"] = pd.to_datetime(datetime.now())
 
-        my_sql_api.df_to_db('gbif_occurrences', data_df)
+        occurrences = my_sql_api.db_to_df('gbif_occurrences', index_col='occurrenceID')
+        output = data_df.combine_first(occurrences)
+
+        my_sql_api.df_to_db('gbif_occurrences', output)
 
     if 'y' == input("\nDo you want to update the table 'taxon'? (y, N)\n"):
         pass
         # Create table 'taxon' that contains taxon.
-        host, user, password, database, table = get_login_details()
-
-        my_sql_api = MySQLAPI(host, user, password, database)
-
-        occurrences = my_sql_api.db_to_df('gbif_occurrences')
+        occurrences = my_sql_api.db_to_df('gbif_occurrences', index_col='occurrenceID')
 
         taxon = occurrences[['key', 'nubKey', 'nameKey', 'taxonID', 'sourceTaxonKey', 'kingdom', 'phylum', 'order',
                              'family', 'kingdomKey', 'phylumKey', 'classKey', 'orderKey', 'familyKey', 'datasetkey',
@@ -72,6 +91,10 @@ def main():
                              'lastCrawled', 'lastInterpreted', 'synonym', 'class']].copy()
 
         my_sql_api.df_to_db('taxon', taxon)
+
+    occurrences = my_sql_api.db_to_df('gbif_occurrences', index_col='occurrenceID')
+
+    csvAPI.df_to_csv('csv/fake_database.csv', occurrences)
 
 
 def get_login_details():
