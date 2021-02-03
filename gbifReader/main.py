@@ -24,7 +24,7 @@ def main():
         try:
             occurrences = my_sql_api.db_to_df('gbif_occurrences', index_col='occurrenceID')
 
-            # Get the first date and month along with the newest date from `updated` in the format `yyyy-mm-dd`.
+            # Get the first year and month along with the newest date from `updated` in the format `yyyy-mm-dd`.
             first_year = str(min(occurrences["year"]))
             first_month = str(min(occurrences["month"]))
             last_update = str(max(pd.to_datetime(occurrences['updated'], format="%Y-%m-%d").dt.date))
