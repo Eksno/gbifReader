@@ -17,10 +17,6 @@ def main():
 
     my_sql_api = MySQLAPI(host, user, password, database)
 
-    occurrences = my_sql_api.db_to_df('gbif_occurrences', index_col='occurrenceID')
-
-    csvAPI.df_to_csv('csv/fake_database.csv', occurrences)
-
     if 'y' == input("\nDo you want to clear the table `gbif_occurrences`? (y, N)\n"):
         my_sql_api.clear('gbif_occurrences')
 
@@ -37,8 +33,7 @@ def main():
 
         except:
             print("Failed to get reference data, ignoring previous data...")
-            #DOWNLOAD_ID = request_download.send_request()
-            #DOWNLOAD_ID = '0181694-200613084148143'
+            DOWNLOAD_ID = request_download.send_request()
 
         print("\nDowloading data...")
         bad_zip_file = True
@@ -78,23 +73,6 @@ def main():
         output = data_df.combine_first(occurrences)
 
         my_sql_api.df_to_db('gbif_occurrences', output)
-
-    if 'y' == input("\nDo you want to update the table 'taxon'? (y, N)\n"):
-        pass
-        # Create table 'taxon' that contains taxon.
-        occurrences = my_sql_api.db_to_df('gbif_occurrences', index_col='occurrenceID')
-
-        taxon = occurrences[['key', 'nubKey', 'nameKey', 'taxonID', 'sourceTaxonKey', 'kingdom', 'phylum', 'order',
-                             'family', 'kingdomKey', 'phylumKey', 'classKey', 'orderKey', 'familyKey', 'datasetkey',
-                             'constituentKey', 'parentKey', 'parent', 'scientificName', 'canonicalName', 'authorship',
-                             'nameType', 'rank', 'origin', 'taxonomicStatus', 'remarks', 'numDescendants',
-                             'lastCrawled', 'lastInterpreted', 'synonym', 'class']].copy()
-
-        my_sql_api.df_to_db('taxon', taxon)
-
-    occurrences = my_sql_api.db_to_df('gbif_occurrences', index_col='occurrenceID')
-
-    csvAPI.df_to_csv('csv/fake_database.csv', occurrences)
 
 
 def get_login_details():
